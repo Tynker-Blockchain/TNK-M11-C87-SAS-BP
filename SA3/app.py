@@ -1,59 +1,42 @@
-from flask import Flask, render_template, request
-import os
+
 from hash import generateHash
+import json
 from time import time
-# import BlockChain class
 
+class BlockChain:
+    def __init__(self):
+        self.chain = []
 
-STATIC_DIR = os.path.abspath('static')
+    def createGenesisBlock(self):
+        genesisBlock = Block(0, time(), [], "No Previous Hash Present. Since this is the first block.")
+        self.chain.append(genesisBlock)
 
-app = Flask(__name__, static_folder=STATIC_DIR)
-app.use_static_for_root = True
-
-# Create a new bloackchain named chain
-
-@app.route("/", methods= ["GET", "POST"])
-def home():
-    print("running")
-    print(request.args.get("form"))
-    global blockData, encryptedData
-    validation = None
-    if request.method == "GET":
-        return render_template('index.html')
-    elif request.args.get("form") == "f1":
-        sender = request.form.get("sender")
-        receiver = request.form.get("receiver")
-        amount = request.form.get("amount")
-        originalData = { 
-                    "sender": sender, 
-                    "receiver": receiver, 
-                    "amount": amount
-                }
-        
-        sender = generateHash(sender)
-        receiver = generateHash(receiver)
-        
-        transaction = { 
-                "sender": sender, 
-                "receiver": receiver, 
-                "amount": amount
-            }
-        
-
-        blockData = {
-                'index': 1,
-                'timestamp': time(),
-                'transaction': transaction,
-                'previousHash': "No Previous Hash Present. Since this is the first block.",
-        }
-        
-        # Use Block class to create newBlock
-        
-        # Use chain.addBlock() to add newBlock to the chain
-        
-
-    # Pass chain.chain in blockData and length of the chain in len    
-    return render_template('index.html', originalData=originalData, blockData = blockData)
+    def printChain(self):
+        for block in self.chain:
+            print("Block Index", block.index)
+            print("Timestamp", block.timestamp)
+            print("Transaction", block.transaction)
+            print( "Previous Hash",block.previousHash)
+            print( "Current Hash",block.currentHash)
+            print("*" * 100 , "\n")
     
-if __name__ == '__main__':
-    app.run(debug = True, port=4000)
+    def addBlock(self, newBlock):
+        if(len(self.chain) == 0):
+            self.createGenesisBlock()
+            # Set first block index to 1
+            
+        newBlock.previousHash = self.chain[-1].currentHash
+        newBlock.currentHash = newBlock.calculateHash()
+        self.chain.append(newBlock)
+
+class Block:
+    def __init__(self, index, timestamp, transaction, previousHash):
+        self.index = index
+        self.transaction = transaction
+        self.timestamp = timestamp
+        self.previousHash = previousHash
+        self.currentHash = self.calculateHash()
+
+    def calculateHash(self):
+        blockString = str(self.index) + str(self.timestamp) + str(self.previousHash) + str(self.transaction)
+        return generateHash(blockString)
